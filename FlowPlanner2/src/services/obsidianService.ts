@@ -70,4 +70,66 @@ export async function syncNote(title: string, body: string): Promise<void> {
   throw new Error(`GitHub API error (HTTP ${response.status})${detail}`);
 }
 
-export const obsidianService = { syncNote };
+export async function updateProgressLog(noteTitle: string): Promise<void> {
+  try {
+    const { token, owner, repo, branch, folderPath } = useSettingsStore.getState();
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const HH = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const datetime = `${yyyy}-${mm}-${dd} ${HH}:${min}`;
+
+    const logPath = folderPath ? `${folderPath}/progress-log.md` : 'progress-log.md';
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${logPath}`;
+
+    const headers: Record<string, string> = {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json',
+    };
+
+    const entry = `\n- ✅ ${datetime} — ${noteTitle} — Молодец! Ты сделала это! 🎉`;
+
+    let newContent: string;
+    let sha: string | undefined;
+
+    const getRes = await fetch(url, { headers });
+
+    if (getRes.status === 200) {
+      const json = await getRes.json();
+      sha = json.sha;
+      const decoded = typeof Buffer !== 'undefined'
+        ? Buffer.from(json.content, 'base64').toString('utf-8')
+        : decodeURIComponent(
+            Array.from(atob(json.content.replace(/\n/g, '')))
+              .map((c: string) => '%' + c.charCodeAt(0).toString(16).padStart(2, '0'))
+              .join('')
+          );
+      newContent = decoded.trimEnd() + entry + '\n';
+    } else {
+      newContent = `# 📈 Progress Log\n\n- ✅ ${datetime} — ${noteTitle} — Молодец! Ты сделала это! 🎉\n`;
+    }
+
+    const base64Content = encodeBase64(newContent);
+
+    const putBody: Record<string, unknown> = {
+      message: `Progress update: ${datetime}`,
+      content: base64Content,
+      branch,
+    };
+    if (sha) putBody.sha = sha;
+
+    await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(putBody),
+    });
+  } catch {
+    // silently ignore — progress log failure must not break the main save flow
+  }
+}
+
+export const obsidianService = { syncNote, updateProgressLog };
