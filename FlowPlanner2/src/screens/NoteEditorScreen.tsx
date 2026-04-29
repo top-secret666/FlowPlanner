@@ -8,38 +8,23 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { syncNote } from '../services/obsidianService';
+import { syncNote, updateProgressLog } from '../services/obsidianService';
 import { theme } from '../theme/theme';
+import { TEMPLATES } from '../data/templates';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
-
-const TEMPLATES: { label: string; body: string }[] = [
-  {
-    label: 'Daily Note',
-    body: '## What I worked on\n\n## Wins\n\n## Tomorrow',
-  },
-  {
-    label: 'Meeting',
-    body: '## Attendees\n\n## Agenda\n\n## Action items',
-  },
-  {
-    label: 'Idea',
-    body: '## The idea\n\n## Why it matters\n\n## Next steps',
-  },
-  {
-    label: 'Todo',
-    body: '## Today\'s tasks\n- [ ] \n- [ ] \n- [ ] ',
-  },
-];
 
 function getFormattedDate(): string {
   const now = new Date();
   return now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function getShortDate(): string {
+function getTodayISO(): string {
   const now = new Date();
-  return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 export default function NoteEditorScreen() {
@@ -47,12 +32,16 @@ export default function NoteEditorScreen() {
   const [body, setBody] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const handleSave = async () => {
     setStatus('loading');
     setErrorMessage('');
     try {
       await syncNote(title, body);
+      if (selectedTemplateId === 'daily') {
+        await updateProgressLog(title);
+      }
       setStatus('success');
     } catch (err: any) {
       setStatus('error');
@@ -60,9 +49,11 @@ export default function NoteEditorScreen() {
     }
   };
 
-  const applyTemplate = (tpl: { label: string; body: string }) => {
-    setTitle(`${tpl.label} – ${getShortDate()}`);
-    setBody(tpl.body);
+  const applyTemplate = (tpl: (typeof TEMPLATES)[number]) => {
+    const date = getTodayISO();
+    setSelectedTemplateId(tpl.id);
+    setTitle(tpl.titleTemplate.replace(/\{\{date\}\}/g, date));
+    setBody(tpl.bodyTemplate.replace(/\{\{date\}\}/g, date));
   };
 
   return (
@@ -90,11 +81,11 @@ export default function NoteEditorScreen() {
       >
         {TEMPLATES.map((tpl) => (
           <TouchableOpacity
-            key={tpl.label}
+            key={tpl.id}
             style={styles.chip}
             onPress={() => applyTemplate(tpl)}
           >
-            <Text style={styles.chipText}>{tpl.label}</Text>
+            <Text style={styles.chipText}>{tpl.emoji} {tpl.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
