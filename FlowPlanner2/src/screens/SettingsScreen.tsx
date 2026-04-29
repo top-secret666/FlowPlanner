@@ -5,23 +5,52 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
 import { useSettingsStore } from '../store/settingsStore';
+import { setupVault } from '../scripts/setupVault';
 import { theme } from '../theme/theme';
 
 export default function SettingsScreen() {
-  const {
-    token, owner, repo, branch, folderPath,
-    setToken, setOwner, setRepo, setBranch, setFolderPath,
-  } = useSettingsStore();
+  const store = useSettingsStore;
+  const current = store.getState();
 
-  const [saved, setSaved] = useState(false);
+  const [token, setToken] = useState(current.token);
+  const [owner, setOwner] = useState(current.owner);
+  const [repo, setRepo] = useState(current.repo);
+  const [branch, setBranch] = useState(current.branch);
+  const [folderPath, setFolderPath] = useState(current.folderPath);
+  const [dailyPath, setDailyPath] = useState(current.dailyPath);
+  const [interviewDate, setInterviewDate] = useState(current.interviewDate);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
+  const [saveMsg, setSaveMsg] = useState('');
+  const [vaultLoading, setVaultLoading] = useState(false);
+  const [vaultMsg, setVaultMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  function handleSave() {
+    store.setState({ token, owner, repo, branch, folderPath, dailyPath, interviewDate });
+    setSaveMsg('Saved ✓');
+    setTimeout(() => setSaveMsg(''), 2000);
+  }
+
+  async function handleSetupVault() {
+    store.setState({ token, owner, repo, branch, folderPath, dailyPath, interviewDate });
+    setVaultLoading(true);
+    setVaultMsg(null);
+    try {
+      const result = await setupVault();
+      setVaultMsg({
+        text: `✅ Vault setup complete! ${result.success} files pushed.${result.failed.length > 0 ? ` ${result.failed.length} failed.` : ''}`,
+        ok: result.failed.length === 0,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setVaultMsg({ text: `❌ ${msg}`, ok: false });
+    } finally {
+      setVaultLoading(false);
+    }
+  }
 
   return (
     <ScrollView
@@ -88,7 +117,7 @@ export default function SettingsScreen() {
 
         <Text style={styles.fieldLabel}>Folder Path</Text>
         <TextInput
-          style={[styles.input, styles.inputLast]}
+          style={styles.input}
           value={folderPath}
           onChangeText={setFolderPath}
           placeholder="notes"
@@ -96,11 +125,56 @@ export default function SettingsScreen() {
           autoCapitalize="none"
           autoCorrect={false}
         />
+
+        <Text style={styles.fieldLabel}>Daily Notes Path</Text>
+        <TextInput
+          style={[styles.input, styles.inputLast]}
+          value={dailyPath}
+          onChangeText={setDailyPath}
+          placeholder="DAILY/daily-notes"
+          placeholderTextColor={theme.colors.textFaint}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      </View>
+
+      {/* Card 3 – Стажировка */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>🎯 Стажировка</Text>
+
+        <Text style={styles.fieldLabel}>Дата стажировки (YYYY-MM-DD)</Text>
+        <TextInput
+          style={[styles.input, styles.inputLast]}
+          value={interviewDate}
+          onChangeText={setInterviewDate}
+          placeholder="2026-06-01"
+          placeholderTextColor={theme.colors.textFaint}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSave}>
-        <Text style={styles.buttonText}>{saved ? 'Saved ✓' : 'Save Settings'}</Text>
+        <Text style={styles.buttonText}>{saveMsg || 'Save Settings'}</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.vaultButton, vaultLoading && styles.buttonDisabled]}
+        onPress={handleSetupVault}
+        disabled={vaultLoading}
+      >
+        {vaultLoading ? (
+          <ActivityIndicator color={theme.colors.textMuted} size="small" />
+        ) : (
+          <Text style={styles.vaultButtonText}>🔧 Setup Obsidian Vault</Text>
+        )}
+      </TouchableOpacity>
+
+      {vaultMsg ? (
+        <Text style={[styles.statusText, { color: vaultMsg.ok ? theme.colors.success : theme.colors.error }]}>
+          {vaultMsg.text}
+        </Text>
+      ) : null}
     </ScrollView>
   );
 }
@@ -112,6 +186,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: theme.spacing.lg,
+    paddingBottom: 40,
   },
   heading: {
     color: theme.colors.text,
@@ -163,10 +238,31 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     padding: theme.spacing.md,
     alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: {
     color: theme.colors.text,
     fontSize: theme.typography.body,
     fontWeight: '700',
+  },
+  vaultButton: {
+    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  vaultButtonText: {
+    color: theme.colors.textMuted,
+    fontSize: theme.typography.body,
+    fontWeight: '600',
+  },
+  statusText: {
+    fontSize: theme.typography.small,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
   },
 });

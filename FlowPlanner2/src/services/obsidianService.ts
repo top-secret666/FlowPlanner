@@ -31,14 +31,28 @@ function encodeBase64(str: string): string {
   );
 }
 
-export async function syncNote(title: string, body: string): Promise<void> {
+export async function syncNote(title: string, body: string, templateId: string, folderOverride?: string): Promise<void> {
   const { token, owner, repo, branch, folderPath } = useSettingsStore.getState();
 
   const filename = generateFilename(title);
   const markdownContent = `# ${title}\n\n${body}`;
   const base64Content = encodeBase64(markdownContent);
 
-  const path = folderPath ? `${folderPath}/${filename}` : filename;
+  let targetPath: string;
+  if (folderOverride === 'daily') {
+    targetPath = 'DAILY/daily-notes';
+  } else if (folderOverride === 'java') {
+    targetPath = 'Interview-Prep/02_LEARNING/Java_Backend';
+  } else if (folderOverride === 'spring') {
+    targetPath = 'Interview-Prep/02_LEARNING/Spring';
+  } else if (folderOverride === 'algorithms') {
+    targetPath = 'Interview-Prep/02_LEARNING/Algorithms';
+  } else if (folderOverride === 'english') {
+    targetPath = 'Interview-Prep/02_LEARNING/English';
+  } else {
+    targetPath = folderPath;
+  }
+  const path = `${targetPath}/${filename}`;
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   const response = await fetch(url, {

@@ -2,6 +2,7 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { Text, View } from "react-native";
+import { Palette } from "lucide-react-native";
 
 /** Tab icon using a text character – no icon-in-circle pattern. */
 function TabIcon({
@@ -24,7 +25,7 @@ function TabIcon({
 }
 
 /**
- * Bottom tab navigator with 4 tabs: Today, Tasks, Journal, Settings.
+ * Bottom tab navigator with 5 tabs: Today, Tasks, Journal, Scrapbook, Settings.
  */
 export default function TabLayout(): React.JSX.Element {
   return (
@@ -70,6 +71,20 @@ export default function TabLayout(): React.JSX.Element {
           title: "Journal",
           tabBarIcon: ({ focused }) => (
             <TabIcon symbol="✦" focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="scrapbook"
+        options={{
+          title: "Scrapbook",
+          tabBarLabel: "🎨 Скрап",
+          tabBarIcon: ({ focused }) => (
+            <Palette
+              size={18}
+              color={focused ? "#01696f" : "#606060"}
+              strokeWidth={2}
+            />
           ),
         }}
       />

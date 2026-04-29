@@ -1,8 +1,11 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Palette } from 'lucide-react-native';
 import SettingsScreen from './src/screens/SettingsScreen';
 import NoteEditorScreen from './src/screens/NoteEditorScreen';
+import KnowledgeScreen from './src/screens/KnowledgeScreen';
+import ScrapbookScreen from './src/screens/ScrapbookScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -12,7 +15,15 @@ export default function App() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ color, size }) => {
-            const icons = { Note: 'create-outline', Settings: 'settings-outline' };
+            const icons = {
+              Note: 'create-outline',
+              Knowledge: 'book-outline',
+              Scrapbook: 'color-palette-outline',
+              Settings: 'settings-outline',
+            };
+            if (route.name === 'Scrapbook') {
+              return <Palette size={size} color={color} strokeWidth={2.2} />;
+            }
             return <Ionicons name={icons[route.name]} size={size} color={color} />;
           },
           tabBarActiveTintColor: '#0d9488',
@@ -45,6 +56,8 @@ export default function App() {
         })}
       >
         <Tab.Screen name="Note" component={NoteEditorScreen} />
+        <Tab.Screen name="Knowledge" component={KnowledgeScreen} options={{ title: 'Knowledge' }} />
+        <Tab.Screen name="Scrapbook" component={ScrapbookScreen} options={{ title: '🎨 Скрап' }} />
         <Tab.Screen name="Settings" component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>

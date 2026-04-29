@@ -8,11 +8,28 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
-import { syncNote, updateProgressLog } from '../services/obsidianService';
+import { syncNote } from '../services/obsidianService';
+import { trackNote } from '../services/progressService';
+import { useSettingsStore } from '../store/settingsStore';
 import { theme } from '../theme/theme';
 import { TEMPLATES } from '../data/templates';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
+const FOLDERS = [
+  { id: 'notes', label: 'Notes', emoji: '📝' },
+  { id: 'java', label: 'Java', emoji: '☕' },
+  { id: 'spring', label: 'Spring', emoji: '🌱' },
+  { id: 'algorithms', label: 'Algorithms', emoji: '🧮' },
+  { id: 'english', label: 'English', emoji: '🇬🇧' },
+  { id: 'daily', label: 'Daily', emoji: '📅' },
+];
+
+const TEMPLATE_FOLDER_MAP: Record<string, string> = {
+  daily: 'daily',
+  lesson: 'java',
+  weekly: 'notes',
+};
 
 function getFormattedDate(): string {
   const now = new Date();
@@ -32,16 +49,27 @@ export default function NoteEditorScreen() {
   const [body, setBody] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedFolder, setSelectedFolder] = useState('notes');
+  const [score, setScore] = useState(3);
+
+  const interviewDate = useSettingsStore.getState().interviewDate;
+  const today = new Date();
+  const target = interviewDate ? new Date(interviewDate) : null;
+  const diffDays = target ? Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const weekNumber = diffDays !== null ? Math.max(1, Math.min(8, 9 - Math.ceil(diffDays / 7))) : null;
+  const isUrgent = diffDays !== null && diffDays <= 7;
+  const showBanner = interviewDate && diffDays !== null;
 
   const handleSave = async () => {
     setStatus('loading');
     setErrorMessage('');
     try {
-      await syncNote(title, body);
-      if (selectedTemplateId === 'daily') {
-        await updateProgressLog(title);
-      }
+      const finalBody = selectedTemplateId === 'daily'
+        ? `${body}\n\nscore:: ${score}`
+        : body;
+      await syncNote(title, finalBody, selectedTemplateId, selectedFolder);
+      await trackNote(title, selectedTemplateId, selectedTemplateId === 'daily' ? score : undefined);
       setStatus('success');
     } catch (err: any) {
       setStatus('error');
@@ -54,6 +82,9 @@ export default function NoteEditorScreen() {
     setSelectedTemplateId(tpl.id);
     setTitle(tpl.titleTemplate.replace(/\{\{date\}\}/g, date));
     setBody(tpl.bodyTemplate.replace(/\{\{date\}\}/g, date));
+    if (TEMPLATE_FOLDER_MAP[tpl.id]) {
+      setSelectedFolder(TEMPLATE_FOLDER_MAP[tpl.id]);
+    }
   };
 
   return (
@@ -63,6 +94,27 @@ export default function NoteEditorScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <Text style={styles.date}>{getFormattedDate()}</Text>
+
+      {showBanner && (
+        diffDays! <= 0 ? (
+          <View style={[styles.banner, styles.bannerUrgent]}>
+            <Text style={[styles.bannerLeft, { color: theme.colors.warning }]}>🚀 День стажировки!</Text>
+          </View>
+        ) : (
+          <View style={[styles.banner, isUrgent ? styles.bannerUrgent : styles.bannerNormal]}>
+            <Text style={[styles.bannerLeft, { color: isUrgent ? theme.colors.warning : theme.colors.primary }]}>
+              🎯 До стажировки
+            </Text>
+            <View style={styles.bannerRight}>
+              <Text style={[styles.bannerDays, { color: isUrgent ? theme.colors.warning : theme.colors.primary }]}>
+                {diffDays} дн
+              </Text>
+              <Text style={styles.bannerWeek}>Неделя {weekNumber} из 8</Text>
+            </View>
+          </View>
+        )
+      )}
+
       <Text style={styles.heading}>New Note</Text>
 
       <TextInput
@@ -73,6 +125,7 @@ export default function NoteEditorScreen() {
         placeholderTextColor={theme.colors.textFaint}
       />
 
+      {/* Template chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -90,6 +143,33 @@ export default function NoteEditorScreen() {
         ))}
       </ScrollView>
 
+      {/* Folder chips */}
+      <Text style={styles.folderLabel}>📁 Сохранить в:</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsRow}
+        contentContainerStyle={styles.chipsContent}
+      >
+        {FOLDERS.map((folder) => (
+          <TouchableOpacity
+            key={folder.id}
+            style={[
+              styles.chip,
+              selectedFolder === folder.id ? styles.chipActive : styles.chipInactive,
+            ]}
+            onPress={() => setSelectedFolder(folder.id)}
+          >
+            <Text style={[
+              styles.chipText,
+              selectedFolder === folder.id && styles.chipTextActive,
+            ]}>
+              {folder.emoji} {folder.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <TextInput
         style={styles.bodyInput}
         value={body}
@@ -99,6 +179,26 @@ export default function NoteEditorScreen() {
         multiline
         textAlignVertical="top"
       />
+
+      {/* Score selector — only for daily template */}
+      {selectedTemplateId === 'daily' && (
+        <View style={styles.scoreSection}>
+          <Text style={styles.scoreLabel}>🏆 Оценка дня:</Text>
+          <View style={styles.scoreRow}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <TouchableOpacity
+                key={n}
+                style={[styles.scoreBtn, score === n ? styles.scoreBtnActive : styles.scoreBtnInactive]}
+                onPress={() => setScore(n)}
+              >
+                <Text style={[styles.scoreBtnText, score === n ? styles.scoreBtnTextActive : styles.scoreBtnTextInactive]}>
+                  {n}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
 
       <TouchableOpacity
         style={[styles.button, status === 'loading' && styles.buttonDisabled]}
@@ -153,21 +253,38 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   chipsRow: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   chipsContent: {
     paddingRight: theme.spacing.sm,
   },
   chip: {
-    backgroundColor: theme.colors.surface2,
     borderRadius: theme.radius.full,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginRight: 8,
+    borderWidth: 1,
+  },
+  chipInactive: {
+    backgroundColor: theme.colors.surface2,
+    borderColor: theme.colors.border,
+  },
+  chipActive: {
+    backgroundColor: theme.colors.primaryLight,
+    borderColor: theme.colors.primary,
   },
   chipText: {
     color: theme.colors.textMuted,
     fontSize: theme.typography.small,
+  },
+  chipTextActive: {
+    color: theme.colors.primary,
+  },
+  folderLabel: {
+    fontSize: theme.typography.small,
+    color: theme.colors.textMuted,
+    marginBottom: 4,
+    marginTop: theme.spacing.md,
   },
   bodyInput: {
     backgroundColor: theme.colors.surface,
@@ -180,6 +297,45 @@ const styles = StyleSheet.create({
     minHeight: 200,
     textAlignVertical: 'top',
     marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.md,
+  },
+  scoreSection: {
+    marginBottom: theme.spacing.lg,
+  },
+  scoreLabel: {
+    fontSize: theme.typography.small,
+    color: theme.colors.textMuted,
+    marginBottom: theme.spacing.sm,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  scoreBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scoreBtnActive: {
+    backgroundColor: theme.colors.primary,
+    borderWidth: 0,
+  },
+  scoreBtnInactive: {
+    backgroundColor: theme.colors.surface2,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  scoreBtnText: {
+    fontSize: theme.typography.body,
+    fontWeight: '700',
+  },
+  scoreBtnTextActive: {
+    color: '#fff',
+  },
+  scoreBtnTextInactive: {
+    color: theme.colors.textMuted,
   },
   button: {
     backgroundColor: theme.colors.primary,
@@ -205,5 +361,34 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     fontSize: theme.typography.body,
     textAlign: 'center',
+  },
+  banner: {
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bannerNormal: {
+    backgroundColor: theme.colors.primaryLight,
+  },
+  bannerUrgent: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+  },
+  bannerLeft: {
+    fontSize: theme.typography.small,
+    fontWeight: '600',
+  },
+  bannerRight: {
+    alignItems: 'flex-end',
+  },
+  bannerDays: {
+    fontSize: theme.typography.h2,
+    fontWeight: '700',
+  },
+  bannerWeek: {
+    fontSize: theme.typography.tiny,
+    color: theme.colors.textMuted,
   },
 });
