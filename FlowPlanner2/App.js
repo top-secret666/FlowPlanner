@@ -16,10 +16,32 @@ export default function App() {
             return <Ionicons name={icons[route.name]} size={size} color={color} />;
           },
           tabBarActiveTintColor: '#0d9488',
-          tabBarInactiveTintColor: '#6b7280',
-          tabBarStyle: { backgroundColor: '#111827' },
-          headerStyle: { backgroundColor: '#111827' },
-          headerTintColor: '#f9fafb',
+          tabBarInactiveTintColor: '#475569',
+          tabBarStyle: {
+            backgroundColor: '#0f172a',
+            borderTopWidth: 1,
+            borderTopColor: '#1e293b',
+            paddingBottom: 8,
+            paddingTop: 8,
+            height: 64,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            marginTop: 2,
+          },
+          headerStyle: {
+            backgroundColor: '#0f172a',
+            borderBottomWidth: 1,
+            borderBottomColor: '#1e293b',
+            elevation: 0,
+            shadowOpacity: 0,
+          },
+          headerTitleStyle: {
+            color: '#f1f5f9',
+            fontSize: 17,
+            fontWeight: '600',
+          },
         })}
       >
         <Tab.Screen name="Note" component={NoteEditorScreen} />

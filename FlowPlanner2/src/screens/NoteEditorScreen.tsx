@@ -9,8 +9,38 @@ import {
   StyleSheet,
 } from 'react-native';
 import { syncNote } from '../services/obsidianService';
+import { theme } from '../theme/theme';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
+const TEMPLATES: { label: string; body: string }[] = [
+  {
+    label: 'Daily Note',
+    body: '## What I worked on\n\n## Wins\n\n## Tomorrow',
+  },
+  {
+    label: 'Meeting',
+    body: '## Attendees\n\n## Agenda\n\n## Action items',
+  },
+  {
+    label: 'Idea',
+    body: '## The idea\n\n## Why it matters\n\n## Next steps',
+  },
+  {
+    label: 'Todo',
+    body: '## Today\'s tasks\n- [ ] \n- [ ] \n- [ ] ',
+  },
+];
+
+function getFormattedDate(): string {
+  const now = new Date();
+  return now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function getShortDate(): string {
+  const now = new Date();
+  return now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 export default function NoteEditorScreen() {
   const [title, setTitle] = useState('');
@@ -30,24 +60,51 @@ export default function NoteEditorScreen() {
     }
   };
 
+  const applyTemplate = (tpl: { label: string; body: string }) => {
+    setTitle(`${tpl.label} – ${getShortDate()}`);
+    setBody(tpl.body);
+  };
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.label}>Title</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Text style={styles.date}>{getFormattedDate()}</Text>
+      <Text style={styles.heading}>New Note</Text>
+
       <TextInput
-        style={styles.inputSingle}
+        style={styles.titleInput}
         value={title}
         onChangeText={setTitle}
-        placeholder="Note title"
-        placeholderTextColor="#6b7280"
+        placeholder="Note title..."
+        placeholderTextColor={theme.colors.textFaint}
       />
 
-      <Text style={styles.label}>Body</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsRow}
+        contentContainerStyle={styles.chipsContent}
+      >
+        {TEMPLATES.map((tpl) => (
+          <TouchableOpacity
+            key={tpl.label}
+            style={styles.chip}
+            onPress={() => applyTemplate(tpl)}
+          >
+            <Text style={styles.chipText}>{tpl.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <TextInput
-        style={styles.inputMulti}
+        style={styles.bodyInput}
         value={body}
         onChangeText={setBody}
-        placeholder="Note body"
-        placeholderTextColor="#6b7280"
+        placeholder="Start writing..."
+        placeholderTextColor={theme.colors.textFaint}
         multiline
         textAlignVertical="top"
       />
@@ -77,64 +134,85 @@ export default function NoteEditorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: theme.colors.bg,
   },
   content: {
-    padding: 20,
+    padding: theme.spacing.lg,
   },
-  label: {
-    color: '#ffffff',
-    fontSize: 14,
+  date: {
+    color: theme.colors.textMuted,
+    fontSize: theme.typography.small,
+    marginBottom: theme.spacing.xs,
+  },
+  heading: {
+    color: theme.colors.text,
+    fontSize: theme.typography.hero,
+    fontWeight: '700',
+    marginBottom: theme.spacing.lg,
+  },
+  titleInput: {
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.h2,
     fontWeight: '600',
-    marginBottom: 6,
-    marginTop: 16,
+    marginBottom: theme.spacing.md,
   },
-  inputSingle: {
-    backgroundColor: '#1f2937',
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+  chipsRow: {
+    marginBottom: theme.spacing.md,
   },
-  inputMulti: {
-    backgroundColor: '#1f2937',
-    color: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#374151',
-    borderRadius: 8,
+  chipsContent: {
+    paddingRight: theme.spacing.sm,
+  },
+  chip: {
+    backgroundColor: theme.colors.surface2,
+    borderRadius: theme.radius.full,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    minHeight: 144,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  chipText: {
+    color: theme.colors.textMuted,
+    fontSize: theme.typography.small,
+  },
+  bodyInput: {
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.body,
+    minHeight: 200,
+    textAlignVertical: 'top',
+    marginBottom: theme.spacing.lg,
   },
   button: {
-    backgroundColor: '#0d9488',
-    borderRadius: 8,
-    paddingVertical: 14,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.radius.md,
+    padding: theme.spacing.md,
     alignItems: 'center',
-    marginTop: 24,
+    marginBottom: theme.spacing.md,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: theme.colors.text,
+    fontSize: theme.typography.body,
     fontWeight: '700',
   },
   successText: {
-    color: '#22c55e',
-    fontSize: 15,
-    marginTop: 14,
+    color: theme.colors.success,
+    fontSize: theme.typography.body,
     textAlign: 'center',
   },
   errorText: {
-    color: '#ef4444',
-    fontSize: 15,
-    marginTop: 14,
+    color: theme.colors.error,
+    fontSize: theme.typography.body,
     textAlign: 'center',
   },
 });
