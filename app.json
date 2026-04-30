@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "FlowPlanner2",
-    "slug": "flowplanner2",
+    "name": "FlowPlanner",
+    "slug": "flowplanner",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark"
