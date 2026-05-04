@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSettingsStore } from '../store/settingsStore';
+import { getGitHubAuthHeader } from './githubAuth';
 
 export type ScrapbookPage = {
   id: number;
@@ -21,13 +22,14 @@ export async function uploadScrapbookImageToGitHub(
   filename: string
 ): Promise<{ path: string; imageUrl: string }> {
   const { token, owner, repo, branch } = useSettingsStore.getState();
+  const authHeader = getGitHubAuthHeader(token);
   const path = `Interview-Prep/02_LEARNING/Knowledge-Base/_scrapbook/${filename}`;
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
 
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -56,6 +58,7 @@ export async function createScrapbookNoteOnGitHub(
   knowledgeFolder = 'Other'
 ): Promise<{ notePath: string }> {
   const { token, owner, repo, branch, folderPath } = useSettingsStore.getState();
+  const authHeader = getGitHubAuthHeader(token);
   const noteFilename = filename.replace(/\.png$/i, '.md');
   const notePath = `${folderPath}/scrapbook/${noteFilename}`;
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${notePath}`;
@@ -81,7 +84,7 @@ export async function createScrapbookNoteOnGitHub(
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({

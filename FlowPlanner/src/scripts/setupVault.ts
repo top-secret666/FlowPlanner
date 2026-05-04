@@ -1,4 +1,5 @@
 import { useSettingsStore } from '../store/settingsStore';
+import { getGitHubAuthHeader } from '../services/githubAuth';
 
 interface VaultFile {
   path: string;
@@ -20,9 +21,10 @@ async function getFileSha(
   repo: string
 ): Promise<string | undefined> {
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const authHeader = getGitHubAuthHeader(token);
   const res = await fetch(url, {
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       Accept: 'application/vnd.github.v3+json',
     },
   });
@@ -40,6 +42,7 @@ async function pushFile(
   branch: string
 ): Promise<void> {
   const sha = await getFileSha(file.path, token, owner, repo);
+  const authHeader = getGitHubAuthHeader(token);
   const body: Record<string, string> = {
     message: `vault: update ${file.path.split('/').pop()}`,
     content: toBase64(file.content),
@@ -54,7 +57,7 @@ async function pushFile(
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       Accept: 'application/vnd.github.v3+json',
       'Content-Type': 'application/json',
     },

@@ -1,4 +1,5 @@
 import { useSettingsStore } from '../store/settingsStore';
+import { getGitHubAuthHeader } from './githubAuth';
 
 function sanitizeTitle(title: string): string {
   return title
@@ -33,6 +34,7 @@ function encodeBase64(str: string): string {
 
 export async function syncNote(title: string, body: string, templateId: string, folderOverride?: string): Promise<void> {
   const { token, owner, repo, branch, folderPath } = useSettingsStore.getState();
+  const authHeader = getGitHubAuthHeader(token);
 
   const filename = generateFilename(title);
   const markdownContent = `# ${title}\n\n${body}`;
@@ -58,7 +60,7 @@ export async function syncNote(title: string, body: string, templateId: string, 
   const response = await fetch(url, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json',
     },
@@ -87,6 +89,7 @@ export async function syncNote(title: string, body: string, templateId: string, 
 export async function updateProgressLog(noteTitle: string): Promise<void> {
   try {
     const { token, owner, repo, branch, folderPath } = useSettingsStore.getState();
+    const authHeader = getGitHubAuthHeader(token);
 
     const now = new Date();
     const yyyy = now.getFullYear();
@@ -100,7 +103,7 @@ export async function updateProgressLog(noteTitle: string): Promise<void> {
     const url = `https://api.github.com/repos/${owner}/${repo}/contents/${logPath}`;
 
     const headers: Record<string, string> = {
-      Authorization: `token ${token}`,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json',
     };

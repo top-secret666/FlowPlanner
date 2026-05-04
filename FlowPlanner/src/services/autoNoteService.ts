@@ -1,4 +1,5 @@
 import { useSettingsStore } from "../store/settingsStore";
+import { getGitHubAuthHeader } from "./githubAuth";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -55,11 +56,12 @@ async function getFileFromGitHub(
   owner: string,
   repo: string
 ): Promise<{ content: string; sha: string } | null> {
+  const authHeader = getGitHubAuthHeader(token);
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
     {
       headers: {
-        Authorization: `token ${token}`,
+        Authorization: authHeader,
         Accept: "application/vnd.github.v3+json",
       },
     }
@@ -83,6 +85,7 @@ async function putFileToGitHub(
   repo: string,
   branch: string
 ): Promise<void> {
+  const authHeader = getGitHubAuthHeader(token);
   const body: Record<string, string> = {
     message,
     content: btoa(unescape(encodeURIComponent(content))),
@@ -94,7 +97,7 @@ async function putFileToGitHub(
     {
       method: "PUT",
       headers: {
-        Authorization: `token ${token}`,
+        Authorization: authHeader,
         Accept: "application/vnd.github.v3+json",
         "Content-Type": "application/json",
       },
