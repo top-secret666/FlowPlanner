@@ -17,12 +17,12 @@ export interface SettingsState {
 
 let state: SettingsState = {
   token: '',
-  owner: '',
-  repo: '',
+  owner: 'top-secret666',
+  repo: 'notes',
   branch: 'main',
-  folderPath: 'notes',
+  folderPath: 'Interview-Prep',
   dailyPath: 'DAILY/daily-notes',
-  interviewDate: '',
+  interviewDate: '2026-06-01',
   setToken: (v) => { state = { ...state, token: v }; },
   setOwner: (v) => { state = { ...state, owner: v }; },
   setRepo: (v) => { state = { ...state, repo: v }; },
