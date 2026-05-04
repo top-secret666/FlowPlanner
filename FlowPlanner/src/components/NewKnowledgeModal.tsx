@@ -32,6 +32,7 @@ const FOLDERS = [
   { id: 'Algorithms', label: 'Algorithms', emoji: '🧮' },
   { id: 'English', label: 'English', emoji: '🇬🇧' },
   { id: 'Other', label: 'Other', emoji: '📝' },
+  { id: 'Sql', label: 'Sql', emoji: '🛡️', color: '#2ad7e3' },
 ];
 
 const LEVELS = ['beginner', 'intermediate', 'advanced'] as const;

@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { theme } from '../theme/theme';
 import { uploadImageToGitHub, saveKnowledgeNote } from '../services/knowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
@@ -56,6 +56,8 @@ const FOLDERS = [
   { id: 'Algorithms', label: 'Algorithms', emoji: '🧮', color: '#3b82f6' },
   { id: 'English', label: 'English', emoji: '🇬🇧', color: '#a855f7' },
   { id: 'Other', label: 'Other', emoji: '📝', color: theme.colors.textMuted },
+  { id: 'Sql', label: 'Sql', emoji: '🛡️', color: '#2ad7e3' },
+
 ];
 
 const LEVELS = [
@@ -172,7 +174,7 @@ function KnowledgeEditor({ visible, initial, onClose, onSaved }: EditorProps) {
       setImages((prev) => [...prev, placeholder]);
 
       try {
-        const b64 = await (FileSystem as any).readAsStringAsync(asset.uri, {
+        const b64 = await FileSystem.readAsStringAsync(asset.uri, {
           encoding: 'base64' as const,
         });
         const githubUrl = await uploadImageToGitHub(b64, filename);

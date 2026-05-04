@@ -73,7 +73,7 @@ export default function SettingsScreen() {
           style={styles.input}
           value={token}
           onChangeText={setToken}
-          placeholder="ghp_xxxxxxxxxxxx"
+          placeholder="github_pat_your_token_here"
           placeholderTextColor={theme.colors.textFaint}
           secureTextEntry
           autoCapitalize="none"
@@ -85,7 +85,7 @@ export default function SettingsScreen() {
           style={[styles.input, styles.inputLast]}
           value={owner}
           onChangeText={setOwner}
-          placeholder="github-username"
+          placeholder="top-secret666"
           placeholderTextColor={theme.colors.textFaint}
           autoCapitalize="none"
           autoCorrect={false}
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
           style={styles.input}
           value={repo}
           onChangeText={setRepo}
-          placeholder="my-obsidian-vault"
+          placeholder="notes"
           placeholderTextColor={theme.colors.textFaint}
           autoCapitalize="none"
           autoCorrect={false}
@@ -123,7 +123,7 @@ export default function SettingsScreen() {
           style={styles.input}
           value={folderPath}
           onChangeText={setFolderPath}
-          placeholder="notes"
+          placeholder="Interview-Prep"
           placeholderTextColor={theme.colors.textFaint}
           autoCapitalize="none"
           autoCorrect={false}
